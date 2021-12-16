@@ -1,98 +1,45 @@
-require("dotenv").config();
-require("./config/database").connect();
 const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const auth = require("./middleware/auth");
+const bodyParser = require("body-parser");
+const { graphqlHTTP } = require("express-graphql");
+const mongoose = require("mongoose");
+const isAuth = require("./middleware/is_auth");
+
+const graphQlSchema = require("./graphql/schema/index");
+const graphQlResolvers = require("./graphql/resolvers/index");
 
 const app = express();
 
-app.use(express.json());
+app.use(bodyParser.json());
 
-//Get user context
-const User = require("./model/user");
-
-app.post("/welcome", auth, (req, res) => {
-  res.status(200).send("Welcome 🙌 ");
-});
-
-//Register User
-app.post("/register", async (req, res) => {
-  try {
-    //get user input
-    const { first_name, last_name, email, password } = req.body;
-
-    //validate user input
-    if (!(email && password && first_name && last_name)) {
-      res.status(400).send("All fields are required");
-    }
-
-    //check if user already exist
-    //Validate if user exist in our database
-    const oldUser = await User.findOne({ email });
-
-    if (oldUser) {
-      return res.status(409).send("User Already Exist. Please Login");
-    }
-
-    //Encrypt user password
-    encryptedPassword = await bcrypt.hash(password, 10);
-
-    //create user in our database
-    const user = await User.create({
-      first_name,
-      last_name,
-      email: email.toLowerCase(),
-      password: encryptedPassword,
-    });
-
-    //create token
-    const token = jwt.sign(
-      { user_id: user._id, email },
-      process.env.TOKEN_KEY,
-      {
-        expiresIn: "2h",
-      }
-    );
-
-    user.token = token;
-
-    res.status(201).json(user);
-  } catch (error) {
-    console.log(error);
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
   }
+  next();
 });
 
-//Login User
-app.post("/login", async (req, res) => {
-  try {
-    //get user input
-    const { email, password } = req.body;
+app.use(isAuth);
 
-    //validate user input
-    if (!(email && password)) {
-      res.status(400).send("All Fields are required");
-    }
-
-    //validate if user exist in out database
-    const user = await User.findOne({ email });
-    if (user && (await bcrypt.compare(password, user.password))) {
-      const token = jwt.sign(
-        { user_id: user._id, email },
-        process.env.TOKEN_KEY,
-        {
-          expiresIn: "2h",
-        }
-      );
-
-      user.token = token;
-
-      res.status(200).json(user);
-    }
-    res.status(400).send("Invalid Credentials");
-  } catch (err) {
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    schema: graphQlSchema,
+    rootValue: graphQlResolvers,
+    graphiql: true,
+  })
+);
+mongoose
+  .connect(
+    `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_DOMAIN}/${process.env.MONGO_DB}?retryWrites=true&w=majority`
+  )
+  .then(() => {
+    let port = 8000;
+    app.listen(port);
+    console.log("Listening to port "+port)
+  })
+  .catch((err) => {
     console.log(err);
-  }
-});
-
-module.exports = app;
+  });

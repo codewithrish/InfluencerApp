@@ -1,0 +1,8 @@
+{
+  "env": {
+    "MONGO_USER": "quantum",
+    "MONGO_PASSWORD": "quantum",
+    "MONGO_DB": "events_db",
+    "MONGO_DOMAIN": "cluster0.jbnqt.mongodb.net"
+  }
+}

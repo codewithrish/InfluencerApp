@@ -1,1 +1,1 @@
-"# InfluencerApp" 
+"# GraphQlDemoApp" 
