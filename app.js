@@ -37,7 +37,7 @@ mongoose
     dbURL
   )
   .then(() => {
-    let port = config.PORT;
+    let port = process.env.PORT || config.PORT;
     app.listen(port);
     console.log("connected to database :: "+dbURL);
     console.log("Listening to port "+port)
