@@ -1,0 +1,7 @@
+{
+  "PORT": 8000,
+  "MONGO_DB": "InfluenceDb",
+  "MONGO_USER": "m001-student",
+  "MONGO_PASSWORD": "m001-mongodb-basics",
+  "MONGO_DOMAIN": "sandbox.lklze.mongodb.net"
+}
